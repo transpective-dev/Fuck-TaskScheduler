@@ -1,0 +1,18 @@
+{
+  "name": "fuck-timescheduler",
+  "version": "0.0.1",
+  "description": "fuck-timescheduler",
+  "main": "index.ts",
+  "author": "Transpective-dev-team",
+  "license": "MIT",
+  "dependencies": {
+    "app-root-path": "^3.1.0",
+    "fs-extra": "^11.3.4",
+    "systray2": "^2.1.4"
+  },
+  "devDependencies": {
+    "@types/app-root-path": "^1.2.8",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.x.x"
+  }
+}
