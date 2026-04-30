@@ -1,3 +1,5 @@
+import { spawn } from 'child_process'
+
 interface inRange {
     start: string
     end: string
@@ -42,9 +44,7 @@ export class API {
 
         const time = this.getCurrentTime()
 
-        console.log(time)
-
-        const [date, timeStr] = time.split(' ')
+        const [_, timeStr] = time.split(' ')
 
         return timeStr.trim()
 
@@ -70,6 +70,8 @@ export class API {
             }
 
         }
+
+        func()
 
         this.interval({
             min: checkInterval,
@@ -98,6 +100,8 @@ export class API {
 
         }
 
+        func()
+
         this.interval({
             min: checkInterval,
             duringInterval: func
@@ -119,6 +123,8 @@ export class API {
             }
 
         }
+
+        func()
 
         this.interval({
             min: checkInterval,
@@ -143,6 +149,8 @@ export class API {
             }
 
         }
+
+        func()
 
         this.interval({
             min: checkInterval,
@@ -175,32 +183,28 @@ export class API {
 
     }
 
-}
-
-import { spawn } from 'child_process'
-
-// run command with powershell
-export const spawnChild = (cmd: string) => {
-
-    return new Promise((resolve, reject) => {
-
-        const kill = (status: boolean) => {
-            child.kill();
-            status ? resolve(true) : reject(false)
-        }
-
-        const child = spawn(cmd, {
-            shell: 'powershell.exe',
-            stdio: 'inherit',
-        });
-
-        child.on('exit', (code) => {
-            code === 0 ? kill(true) : kill(false)
-        });
-
-        child.on('error', (err) => {
-            kill(false)
-        });
-
-    })
+    spawnChild = (cmd: string) => {
+    
+        return new Promise((resolve, reject) => {
+    
+            const kill = (status: boolean) => {
+                child.kill();
+                status ? resolve(true) : reject(false)
+            }
+    
+            const child = spawn(cmd, {
+                shell: 'powershell.exe',
+                stdio: 'inherit',
+            });
+    
+            child.on('exit', (code) => {
+                code === 0 ? kill(true) : kill(false)
+            });
+    
+            child.on('error', (err) => {
+                kill(false)
+            });
+    
+        })
+    }
 }
