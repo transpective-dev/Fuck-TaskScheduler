@@ -57,19 +57,23 @@ export class API {
         whenInRange
     }: inRange) {
 
+        // immediate
+
+        const func = () => {
+
+            const time = this.getCurrentSimple()
+
+            const isTrue = time >= start && time <= end
+
+            if (isTrue) {
+                whenInRange()
+            }
+
+        }
+
         this.interval({
             min: checkInterval,
-            duringInterval: () => {
-
-                const time = this.getCurrentSimple()
-
-                const isTrue = time >= start && time <= end
-
-                if (isTrue) {
-                    whenInRange()
-                }
-
-            }
+            duringInterval: func
         })
 
 
@@ -82,19 +86,21 @@ export class API {
         whenInRange
     }: inRange) {
 
+        const func = () => {
+
+            const time = this.getCurrentTime()
+
+            const isTrue = time >= start && time <= end
+
+            if (isTrue) {
+                whenInRange()
+            }
+
+        }
+
         this.interval({
             min: checkInterval,
-            duringInterval: () => {
-
-                const time = this.getCurrentTime()
-
-                const isTrue = time >= start && time <= end
-
-                if (isTrue) {
-                    whenInRange()
-                }
-
-            }
+            duringInterval: func
         })
     }
 
@@ -104,17 +110,19 @@ export class API {
         whenTime
     }: atTime) {
 
+        const func = () => {
+
+            const currentTime = this.getCurrentSimple()
+
+            if (currentTime === time) {
+                whenTime()
+            }
+
+        }
+
         this.interval({
             min: checkInterval,
-            duringInterval: () => {
-
-                const currentTime = this.getCurrentSimple()
-
-                if (currentTime === time) {
-                    whenTime()
-                }
-
-            }
+            duringInterval: func
         })
 
 
@@ -126,17 +134,19 @@ export class API {
         whenTime
     }: atTime) {
 
+        const func = () => {
+
+            const currentTime = this.getCurrentTime()
+
+            if (currentTime === time) {
+                whenTime()
+            }
+
+        }
+
         this.interval({
             min: checkInterval,
-            duringInterval: () => {
-
-                const currentTime = this.getCurrentTime()
-
-                if (currentTime === time) {
-                    whenTime()
-                }
-
-            }
+            duringInterval: func
         })
 
     }
@@ -152,7 +162,8 @@ export class API {
 
             duringInterval()
 
-        }, 1000 * hr * 60 * 60 + 1000 * min * 60 + 1000 * sec)
+            // prevent Event Loop Starvation
+        }, Math.max(1000 * hr * 60 * 60 + 1000 * min * 60 + 1000 * sec, 1000))
 
         const stop = () => {
 
@@ -164,4 +175,32 @@ export class API {
 
     }
 
+}
+
+import { spawn } from 'child_process'
+
+// run command with powershell
+export const spawnChild = (cmd: string) => {
+
+    return new Promise((resolve, reject) => {
+
+        const kill = (status: boolean) => {
+            child.kill();
+            status ? resolve(true) : reject(false)
+        }
+
+        const child = spawn(cmd, {
+            shell: 'powershell.exe',
+            stdio: 'inherit',
+        });
+
+        child.on('exit', (code) => {
+            code === 0 ? kill(true) : kill(false)
+        });
+
+        child.on('error', (err) => {
+            kill(false)
+        });
+
+    })
 }
