@@ -16,11 +16,8 @@ interface interval {
     duringInterval: () => void
 }
 
-import fs from 'fs-extra'
-
-const config = fs.readJSONSync('./config.json')
-
-const checkInterval = config.checkInterval
+// checkInterval is the interval to dynamically observe the time.
+const checkInterval = 1
 
 export class API {
 
