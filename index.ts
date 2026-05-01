@@ -1,4 +1,5 @@
 const SysTray = require('systray2').default || require('systray2');
+import path from 'path';
 
 const trayConfig = {
   menu: {
@@ -31,6 +32,7 @@ systray.onClick((action: any) => {
 });
 
 systray.ready().then(async () => {
+  process.env.ROOTPATH = path.dirname(process.execPath)
   await import('./execute.ts');
 });
 

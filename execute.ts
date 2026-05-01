@@ -1,7 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 
-const root = path.dirname(process.execPath);
+const root = process.env.ROOTPATH!;
 
 const script_loader = async () => {
 

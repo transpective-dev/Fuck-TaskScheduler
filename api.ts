@@ -1,4 +1,9 @@
 import { spawn } from 'child_process'
+import fs, { statSync } from 'fs'
+import path from 'path'
+import { EventEmitter } from 'events'
+
+const root = process.env.ROOTPATH!
 
 interface inRange {
     start: string
@@ -18,8 +23,16 @@ interface interval {
     duringInterval: () => void
 }
 
+interface logger {
+    message: string
+}
+
+interface immediate {
+    whenUsed: () => void
+}
+
 // checkInterval is the interval to dynamically observe the time.
-const checkInterval = 1
+const checkInterval = 0.1
 
 export class API {
 
@@ -66,7 +79,19 @@ export class API {
             const isTrue = time >= start && time <= end
 
             if (isTrue) {
-                whenInRange()
+                try {
+                    const result = whenInRange() as any;
+
+                    // check is result promise
+                    if (result instanceof Promise) {
+
+                        // if result was promise, use catch to prevent crash
+                        result.catch(err => console.error('[Schedule Error in inRange]:', err))
+
+                    }
+                } catch (error) {
+                    console.error('[Schedule Sync Error in inRange]:', error)
+                }
             }
 
         }
@@ -95,7 +120,14 @@ export class API {
             const isTrue = time >= start && time <= end
 
             if (isTrue) {
-                whenInRange()
+                try {
+                    const result = whenInRange() as any;
+                    if (result instanceof Promise) {
+                        result.catch(err => console.error('[Schedule Error in inRangeComplex]:', err))
+                    }
+                } catch (error) {
+                    console.error('[Schedule Sync Error in inRangeComplex]:', error)
+                }
             }
 
         }
@@ -119,7 +151,14 @@ export class API {
             const currentTime = this.getCurrentSimple()
 
             if (currentTime === time) {
-                whenTime()
+                try {
+                    const result = whenTime() as any;
+                    if (result instanceof Promise) {
+                        result.catch(err => console.error('[Schedule Error in atTime]:', err))
+                    }
+                } catch (error) {
+                    console.error('[Schedule Sync Error in atTime]:', error)
+                }
             }
 
         }
@@ -145,7 +184,14 @@ export class API {
             const currentTime = this.getCurrentTime()
 
             if (currentTime === time) {
-                whenTime()
+                try {
+                    const result = whenTime() as any;
+                    if (result instanceof Promise) {
+                        result.catch(err => console.error('[Schedule Error in atTimeComplex]:', err))
+                    }
+                } catch (error) {
+                    console.error('[Schedule Sync Error in atTimeComplex]:', error)
+                }
             }
 
         }
@@ -183,28 +229,98 @@ export class API {
 
     }
 
+    immediate({
+        whenUsed
+    }: immediate): {
+        status: boolean,
+        message: string | null
+    } {
+
+        try {
+            whenUsed()
+            return { status: true, message: null }
+        } catch (error) {
+            return { status: false, message: error as string }
+        }
+
+    }
+
+    logger({
+        message
+    }: logger): {
+        status: boolean,
+        message: string | null
+    } {
+
+        try {
+
+            const log = path.join(root, 'log.txt')
+
+            const isExist = fs.existsSync(log)
+
+            message = this.getCurrentTime() + ': ' + message
+
+            const append = (m: string) => fs.appendFileSync(log, `${message}\n`)
+            const create = (m: string) => fs.writeFileSync(log, `${message}\n`)
+
+            isExist ? append(message) : create(message)
+
+            return { status: true, message: null }
+
+        } catch (error) {
+
+            return { status: false, message: error as string }
+
+        }
+    }
+
+    public emitter = new EventEmitter()
+
     spawnChild = (cmd: string) => {
-    
+
         return new Promise((resolve, reject) => {
-    
-            const kill = (status: boolean) => {
+
+            const kill = (status: boolean, errorCode?: number) => {
                 child.kill();
-                status ? resolve(true) : reject(false)
+                status ? resolve(true) : reject(new Error(`Process exited with code ${errorCode ?? 'unknown'}`))
             }
-    
-            const child = spawn(cmd, {
-                shell: 'powershell.exe',
-                stdio: 'inherit',
+
+            const psPath = `${process.env.SystemRoot || 'C:\\Windows'}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe`;
+
+            const child = spawn(psPath, ['-NoProfile', '-Command', cmd], {
+                stdio: 'pipe',
+                cwd: process.env.USERPROFILE || process.env.SystemRoot || 'C:\\Windows',
+                env: process.env,
             });
-    
+
+            child.stdout.on('data', (data) => {
+
+                const text = data.toString()
+
+                console.log(text) 
+
+                this.emitter.emit('stdout', text)
+
+            })
+
+            child.stderr.on('data', (data) => {
+
+                const text = data.toString()
+
+                console.error(text) 
+
+                this.emitter.emit('stderr', text)
+
+            })
+
             child.on('exit', (code) => {
-                code === 0 ? kill(true) : kill(false)
+                code === 0 ? kill(true) : kill(false, code ?? undefined)
             });
-    
+
             child.on('error', (err) => {
                 kill(false)
             });
-    
+
         })
     }
 }
